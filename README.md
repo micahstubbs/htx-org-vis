@@ -1,2 +1,1 @@
-# htx-org-vis
-an interactive graph visualization of the city of houston's org structure
+Click to expand or collapse nodes in the tree. Built with [D3.js](http://mbostock.github.com/d3/).

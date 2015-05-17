@@ -1,0 +1,26 @@
+{
+  "name": "328d3a7276f34bb8d62a",
+  "version": "1.0.0",
+  "description": "Click to expand or collapse nodes in the tree. Built with [D3.js](http://mbostock.github.com/d3/).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gist.github.com:/328d3a7276f34bb8d62a.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "connect-livereload": "^0.5.3",
+    "express": "^4.12.3",
+    "gulp": "^3.8.11",
+    "tiny-lr": "^0.1.5"
+  },
+  "devDependencies": {
+    "connect-livereload": "^0.5.3",
+    "express": "^4.12.3",
+    "tiny-lr": "^0.1.5"
+  }
+}
