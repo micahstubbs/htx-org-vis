@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="http://d3js.org/d3.v3.js"></script>
+
+<link href='http://fonts.googleapis.com/css?family=Codystar:300,400|Ubuntu:300,400,500,700|Tulpen+One|Expletus+Sans:400,600,500,700|Roboto:500,900,100,300,700,400|Oswald:400,300,700' rel='stylesheet' type='text/css'>
+
+<link rel="stylesheet" href="http://intentive.info/styles/components.css">
+
+<style>
+
+path.link {
+  fill: none;
+  stroke: #fcbba1;
+  stroke-width: 1.5px;
+}
+
+circle {
+  fill: #ccc;
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+text {
+  fill: #000;
+  font: 10px sans-serif;
+  pointer-events: none;
+}
+
+.marker {
+    fill: #fcbba1;
+}
+
+.ui{
+    position: fixed;
+    font-family: sans-serif;
+    padding-left:1em;
+}
+
+select.form-control {
+    width: 300px;
+    height: 30px;
+    background-color: hsl(0, 0%, 93%);
+}
+
+
+</style>
+<body>
+
+<div class="ui">
+	<h1>Houston Texas City Government Organization Chart</h1>
+	    <select class="form-control">
+	        <option value="">Select Branch</option>
+	        <option value="Parks and Recreation">Parks and Recreation</option>
+	        <option value="Parks and Recreation">Parks and Recreation</option>
+	    </select>
+</div>
+
+<script>
+
+// get the data
+d3.csv("data.csv", function(error, links) {
+
+/*
+var d.source = links.employeeID;
+var d.target = links.managerID;
+var d.value = links.payGrade;
+*/
+
+var nodes = {};
+
+// Compute the distinct nodes from the links.
+links.forEach(function(link) {
+    link.source = nodes[link.source] || 
+        (nodes[link.source] = {name: link.employee});
+    link.target = nodes[link.target] || 
+        (nodes[link.target] = {name: link.manager});
+    link.value = +link.value;
+});
+
+var width = 4000,
+    height = 2000;
+
+var force = d3.layout.force()
+    .nodes(d3.values(nodes))
+    .links(links)
+    .size([width, height])
+    .linkDistance(20)
+    .charge(-200)
+    .on("tick", tick)
+    .start();
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+// build the arrow.
+svg.append("svg:defs").selectAll("marker")
+    .data(["end"])      // Different link/path types can be defined here
+  .enter().append("svg:marker")    // This section adds in the arrows
+    .attr("id", String)
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", -1.5)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+    .attr("class", "marker")
+  .append("svg:path")
+    .attr("d", "M0,-5L10,0L0,5");
+
+// add the links and the arrows
+var path = svg.append("svg:g").selectAll("path")
+    .data(force.links())
+  .enter().append("svg:path")
+//    .attr("class", function(d) { return "link " + d.type; })
+    .attr("class", "link")
+    .attr("marker-end", "url(#end)");
+
+// define the nodes
+var node = svg.selectAll(".node")
+    .data(force.nodes())
+  .enter().append("g")
+    .attr("class", "node")
+    .on("click", click)
+    .on("dblclick", dblclick)
+    .call(force.drag);
+
+// add the nodes
+node.append("circle")
+    .attr("r", 5);
+
+// add the text 
+node.append("text")
+    .attr("x", 12)
+    .attr("dy", ".35em")
+    .text(function(d) { return d.name; });
+
+// add the curvy lines
+function tick() {
+    path.attr("d", function(d) {
+        var dx = d.target.x - d.source.x,
+            dy = d.target.y - d.source.y,
+            dr = Math.sqrt(dx * dx + dy * dy);
+        return "M" + 
+            d.source.x + "," + 
+            d.source.y + "A" + 
+            dr + "," + dr + " 0 0,1 " + 
+            d.target.x + "," + 
+            d.target.y;
+    });
+
+    node
+        .attr("transform", function(d) { 
+  	    return "translate(" + d.x + "," + d.y + ")"; });
+}
+
+// action to take on mouse click
+function click() {
+    d3.select(this).select("text").transition()
+        .duration(750)
+        .attr("x", 22)
+        .style("fill", "steelblue")
+        .style("stroke", "lightsteelblue")
+        .style("stroke-width", ".5px")
+        .style("font", "20px sans-serif");
+    d3.select(this).select("circle").transition()
+        .duration(750)
+        .attr("r", 16)
+        .style("fill", "lightsteelblue");
+}
+
+// action to take on mouse double click
+function dblclick() {
+    d3.select(this).select("circle").transition()
+        .duration(750)
+        .attr("r", 6)
+        .style("fill", "#ccc");
+    d3.select(this).select("text").transition()
+        .duration(750)
+        .attr("x", 12)
+        .style("stroke", "none")
+        .style("fill", "black")
+        .style("stroke", "none")
+        .style("font", "10px sans-serif");
+}
+
+});
+
+</script>
+</body>
+</html>
