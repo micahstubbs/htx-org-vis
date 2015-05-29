@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <script src="http://d3js.org/d3.v3.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.9.3/lodash.min.js"></script>
+<link href='http://fonts.googleapis.com/css?family=Codystar:300,400|Ubuntu:300,400,500,700|Tulpen+One|Expletus+Sans:400,600,500,700|Roboto:500,900,100,300,700,400|Oswald:400,300,700' rel='stylesheet' type='text/css'>
+
+<link rel="stylesheet" href="http://intentive.info/styles/components.css">
+
 <style>
 
 path.link {
@@ -25,26 +30,63 @@ text {
     fill: #fcbba1;
 }
 
-h1 {
+.ui{
     position: fixed;
-    opacity: 0.5;
     font-family: sans-serif;
+    padding-left:1em;
+}
+
+select.form-control {
+    width: 300px;
+    height: 30px;
+    background-color: hsl(0, 0%, 93%);
 }
 
 
 </style>
 <body>
-<h1>Houston Parks and Recreation</h1>
+
+<div class="ui" id="ui-container">
+	<h1>Houston Texas City Government Organization Chart</h1>
+</div>
+
 <script>
 
+var width = 4000,
+    height = 2000;
+
 // get the data
-d3.csv("data.csv", function(error, links) {
+d3.csv("data-small.csv", function(error, links) {
 
 /*
 var d.source = links.employeeID;
 var d.target = links.managerID;
 var d.value = links.payGrade;
 */
+
+var areas = [];
+
+links.forEach(function(link) {
+    areas.push(link.area);
+});
+
+areas = _.uniq(areas);
+
+var index = Math.round(Math.random() * areas.length);
+
+var selector = d3.select("#ui-container")
+    .append("select")
+    .attr("id", "branch-selector")
+    .attr("class", "form-control")
+    .selectAll("option")
+    .data(areas)
+    .enter().append("option")
+    .text(function(d) { return d; })
+    .attr("value", function (d, i) {
+        return i;
+    });
+
+d3.select("#branch-selector").property("selectedIndex", index);
 
 var nodes = {};
 
@@ -56,9 +98,6 @@ links.forEach(function(link) {
         (nodes[link.target] = {name: link.manager});
     link.value = +link.value;
 });
-
-var width = 4000,
-    height = 2000;
 
 var force = d3.layout.force()
     .nodes(d3.values(nodes))
@@ -115,6 +154,14 @@ node.append("text")
     .attr("dy", ".35em")
     .text(function(d) { return d.name; });
 
+d3.select("#branch-selector")
+    .on("change", function(d) {
+        index = this.value;
+        update(index);
+    })
+
+
+
 // add the curvy lines
 function tick() {
     path.attr("d", function(d) {
@@ -129,8 +176,7 @@ function tick() {
             d.target.y;
     });
 
-    node
-        .attr("transform", function(d) { 
+    node.attr("transform", function(d) { 
   	    return "translate(" + d.x + "," + d.y + ")"; });
 }
 
@@ -162,10 +208,89 @@ function dblclick() {
         .style("fill", "black")
         .style("stroke", "none")
         .style("font", "10px sans-serif");
+};
+
+
+
+
+
+
+
+
+
+
+function update(filterIndex) {
+
+    console.log(filterIndex);
+
+    console.log(areas[filterIndex]);
+    
+    links = _.filter(links, function(link) {
+        return link.area == areas[filterIndex];
+    });
+
+// exit existing nodes, links, arrows
+//transition
+// append new nodes links arrow
+
+    d3.select("svg")
+        .selectAll("*").remove();
+
+    var force = d3.layout.force()
+        .nodes(d3.values(nodes))
+        .links(links)
+        .size([width, height])
+        .linkDistance(20)
+        .charge(-200)
+        .on("tick", tick)
+        .start();
+
+// build the arrow.
+svg.append("svg:defs").selectAll("marker")
+    .data(["end"])      // Different link/path types can be defined here
+  .enter().append("svg:marker")    // This section adds in the arrows
+    .attr("id", String)
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", -1.5)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+    .attr("class", "marker")
+  .append("svg:path")
+    .attr("d", "M0,-5L10,0L0,5");
+
+// add the links and the arrows
+var path = svg.append("svg:g").selectAll("path")
+    .data(force.links())
+  .enter().append("svg:path")
+//    .attr("class", function(d) { return "link " + d.type; })
+    .attr("class", "link")
+    .attr("marker-end", "url(#end)");
+
+// define the nodes
+var node = svg.selectAll(".node")
+    .data(force.nodes())
+  .enter().append("g")
+    .attr("class", "node")
+    .on("click", click)
+    .on("dblclick", dblclick)
+    .call(force.drag);
+
+// add the nodes
+node.append("circle")
+    .attr("r", 5);
+
+// add the text 
+node.append("text")
+    .attr("x", 12)
+    .attr("dy", ".35em")
+    .text(function(d) { return d.name; })
 }
 
-});
+// update(index, links, nodes);
 
+}); // close the d3.csv block
 </script>
 </body>
 </html>
