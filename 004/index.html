@@ -53,10 +53,29 @@ select.form-control {
 <script>
 
 var width = 4000,
-    height = 2000;
+    height = 2000,
+    root;
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var link = svg.selectAll(".link"),
+    node = svg.selectAll(".node"),
+    path = svg.selectAll(".path");
+
+var force = d3.layout.force()
+    .size([width, height]);
+
+var areas = [];
+var links = [];
+var nodes = {};
 
 // get the data
-d3.csv("data-small.csv", function(error, links) {
+d3.csv("data-small.csv", function(error, data) {
+
+links = data;
+root = data;
 
 /*
 var d.source = links.employeeID;
@@ -64,13 +83,12 @@ var d.target = links.managerID;
 var d.value = links.payGrade;
 */
 
-var areas = [];
-
-links.forEach(function(link) {
+root.forEach(function(link) {
     areas.push(link.area);
 });
 
 areas = _.uniq(areas);
+areas.push("Choose a Department");
 
 var index = Math.round(Math.random() * areas.length);
 
@@ -86,73 +104,30 @@ var selector = d3.select("#ui-container")
         return i;
     });
 
-d3.select("#branch-selector").property("selectedIndex", index);
+    d3.select("#branch-selector").property("selectedIndex", index);
 
-var nodes = {};
+    // Compute the distinct nodes from the links.
+    links.forEach(function(link) {
+        link.source = nodes[link.source] || 
+            (nodes[link.source] = {name: link.employee});
+        link.target = nodes[link.target] || 
+            (nodes[link.target] = {name: link.manager});
+        link.value = +link.value;
+    });
 
-// Compute the distinct nodes from the links.
-links.forEach(function(link) {
-    link.source = nodes[link.source] || 
-        (nodes[link.source] = {name: link.employee});
-    link.target = nodes[link.target] || 
-        (nodes[link.target] = {name: link.manager});
-    link.value = +link.value;
-});
+console.log("CURRENT LINKS",links);
+console.log("CURRENT Nodes",nodes);
 
-var force = d3.layout.force()
+ force = d3.layout.force()
     .nodes(d3.values(nodes))
-    .links(links)
-    .size([width, height])
     .linkDistance(20)
     .charge(-200)
+    .links(links)
     .on("tick", tick)
     .start();
 
-var svg = d3.select("body").append("svg")
-    .attr("width", width)
-    .attr("height", height);
+buildTree();
 
-// build the arrow.
-svg.append("svg:defs").selectAll("marker")
-    .data(["end"])      // Different link/path types can be defined here
-  .enter().append("svg:marker")    // This section adds in the arrows
-    .attr("id", String)
-    .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 15)
-    .attr("refY", -1.5)
-    .attr("markerWidth", 6)
-    .attr("markerHeight", 6)
-    .attr("orient", "auto")
-    .attr("class", "marker")
-  .append("svg:path")
-    .attr("d", "M0,-5L10,0L0,5");
-
-// add the links and the arrows
-var path = svg.append("svg:g").selectAll("path")
-    .data(force.links())
-  .enter().append("svg:path")
-//    .attr("class", function(d) { return "link " + d.type; })
-    .attr("class", "link")
-    .attr("marker-end", "url(#end)");
-
-// define the nodes
-var node = svg.selectAll(".node")
-    .data(force.nodes())
-  .enter().append("g")
-    .attr("class", "node")
-    .on("click", click)
-    .on("dblclick", dblclick)
-    .call(force.drag);
-
-// add the nodes
-node.append("circle")
-    .attr("r", 5);
-
-// add the text 
-node.append("text")
-    .attr("x", 12)
-    .attr("dy", ".35em")
-    .text(function(d) { return d.name; });
 
 d3.select("#branch-selector")
     .on("change", function(d) {
@@ -160,9 +135,8 @@ d3.select("#branch-selector")
         update(index);
     })
 
+}); // close the d3.csv block
 
-
-// add the curvy lines
 function tick() {
     path.attr("d", function(d) {
         var dx = d.target.x - d.source.x,
@@ -210,40 +184,7 @@ function dblclick() {
         .style("font", "10px sans-serif");
 };
 
-
-
-
-
-
-
-
-
-
-function update(filterIndex) {
-
-    console.log(filterIndex);
-
-    console.log(areas[filterIndex]);
-    
-    links = _.filter(links, function(link) {
-        return link.area == areas[filterIndex];
-    });
-
-// exit existing nodes, links, arrows
-//transition
-// append new nodes links arrow
-
-    d3.select("svg")
-        .selectAll("*").remove();
-
-    var force = d3.layout.force()
-        .nodes(d3.values(nodes))
-        .links(links)
-        .size([width, height])
-        .linkDistance(20)
-        .charge(-200)
-        .on("tick", tick)
-        .start();
+function buildTree(){
 
 // build the arrow.
 svg.append("svg:defs").selectAll("marker")
@@ -261,17 +202,18 @@ svg.append("svg:defs").selectAll("marker")
     .attr("d", "M0,-5L10,0L0,5");
 
 // add the links and the arrows
-var path = svg.append("svg:g").selectAll("path")
+ path = svg.append("svg:g").selectAll("path")
     .data(force.links())
   .enter().append("svg:path")
-//    .attr("class", function(d) { return "link " + d.type; })
-    .attr("class", "link")
-    .attr("marker-end", "url(#end)");
+  .attr("class", function(d) { return "link " + d.type; })
+  .attr("marker-end", "url(#end)");
 
 // define the nodes
-var node = svg.selectAll(".node")
+
+
+node = svg.selectAll(".node")
     .data(force.nodes())
-  .enter().append("g")
+    .enter().append("g")
     .attr("class", "node")
     .on("click", click)
     .on("dblclick", dblclick)
@@ -285,12 +227,64 @@ node.append("circle")
 node.append("text")
     .attr("x", 12)
     .attr("dy", ".35em")
-    .text(function(d) { return d.name; })
+    .text(function(d) { return d.name; });
+
+
 }
 
-// update(index, links, nodes);
 
-}); // close the d3.csv block
+function update(filterIndex) {
+
+    console.log("index! ", filterIndex);
+    console.log("areas: ",areas[filterIndex]);
+
+    console.log("LINKS! ", root);
+
+    links = _.filter(root, function(link) {
+        return link.area == areas[filterIndex];
+    });
+
+    console.log("new Links: ",links.length);
+
+    // Compute the distinct nodes from the links.
+    links.forEach(function(link) {
+        link.source = nodes[link.source] || 
+            (nodes[link.source] = {name: link.employee});
+        link.target = nodes[link.target] || 
+            (nodes[link.target] = {name: link.manager});
+        link.value = +link.value;
+    });
+
+    buildTree();
+
+    // exit existing nodes, links, arrows
+    //transition
+    // append new nodes links arrow
+
+    // Restart the force layout.
+
+    /*
+      force
+          .nodes(nodes)
+          .links(links)
+          .start();
+    */
+
+}
+
+// Returns a list of all nodes under the root.
+function flatten(root) {
+  var nodes = [], i = 0;
+
+  function recurse(node) {
+    if (node.children) node.children.forEach(recurse);
+    if (!node.id) node.id = ++i;
+    nodes.push(node);
+  }
+
+  recurse(root);
+  return nodes;
+}
 </script>
 </body>
 </html>
