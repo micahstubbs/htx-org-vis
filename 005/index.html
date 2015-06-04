@@ -36,6 +36,11 @@ text {
     padding-left:1em;
 }
 
+.vip circle{
+    fill:red;
+    r:7;
+}
+
 select.form-control {
     width: 300px;
     height: 30px;
@@ -47,7 +52,7 @@ select.form-control {
 <body>
 
 <div class="ui" id="ui-container">
-	<h1>Houston Texas City Government Organization Chart</h1>
+	<h1 class="xlarge oswald">Houston Texas City Government Organization Chart</h1>
 </div>
 
 <script>
@@ -55,6 +60,8 @@ select.form-control {
 var width = 4000,
     height = 2000,
     root;
+
+var vipArr = ["ANNISE PARKER"];
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
@@ -110,8 +117,6 @@ var selector = d3.select("#ui-container")
             update(index);
         })
 
-    update(0);
-
 }); // close the d3.csv block
 
 function tick() {
@@ -131,24 +136,41 @@ function tick() {
   	    return "translate(" + d.x + "," + d.y + ")"; });
 }
 
+function click(d1,i){
 
-// action to take on mouse click
-function click() {
-    d3.select(this).select("text").transition()
+var target = d3.select(this);
+
+    target.select("text").transition()
         .duration(750)
         .attr("x", 22)
         .style("fill", "steelblue")
         .style("stroke", "lightsteelblue")
         .style("stroke-width", ".5px")
-        .style("font", "20px sans-serif");
-    d3.select(this).select("circle").transition()
+        .style("font-size", "20px");
+
+    target.select("circle").transition()
         .duration(750)
-        .attr("r", 16)
+        .attr("r", function(){ return (target.attr("r")==16)? 5:16;   })
         .style("fill", "lightsteelblue");
-}
+
+    force.charge(
+            function(d2,i){
+                if(d2!=d1)
+                    return -200;//calculate your charge for other nodes
+                else
+                    return -4000;//calculate your charge for the clicked node
+            });
+
+        force.start();
+ }
 
 // action to take on mouse double click
 function dblclick() {
+
+    force.linkStrength(0.5).charge(-200).friction(0.6);
+
+    force.start();
+
     d3.select(this).select("circle").transition()
         .duration(750)
         .attr("r", 6)
@@ -160,21 +182,19 @@ function dblclick() {
         .style("fill", "black")
         .style("stroke", "none")
         .style("font", "10px sans-serif");
+
 };
+
 
 function buildTree(){
 
-
  force.nodes(d3.values(nodes))
     .links(links)
-    .linkDistance(20)
-    .charge(-200)
+    .linkStrength(0.5)
+    .charge(-200).friction(0.7)
     .on("tick", tick)
     .start();
 
-/*
-
-// build the arrow.
 svg.append("svg:defs").selectAll("marker")
     .data(["end"])      // Different link/path types can be defined here
   .enter().append("svg:marker")    // This section adds in the arrows
@@ -189,17 +209,12 @@ svg.append("svg:defs").selectAll("marker")
   .append("svg:path")
     .attr("d", "M0,-5L10,0L0,5");
 
-// add the links and the arrows
+path = path.data(force.links());
+path.exit().remove();
 
-  // Exit any old links.
-
- path = svg.append("svg:g").selectAll("path")
-  .data(force.links())
-  .enter().append("svg:path")
+pathObj = path.enter().append("svg:path")
   .attr("class", function(d) { return "link " + d.type; })
   .attr("marker-end", "url(#end)");
-*/
-
 
 // define the nodes
 // Exit any old nodes.
@@ -212,7 +227,7 @@ node = node.data(force.nodes());
 node.exit().remove();
 
 var nodeObj = node.enter()
-    .append("g").attr("class", "node");
+    .append("g").attr("class", "node").attr("class",function(d){ if(vipArr.indexOf(d.name)>-1){ return "vip";  }  });
 
 nodeObj
     .append("circle").attr("r", 5);
@@ -248,13 +263,12 @@ function color(d) {
 
 function update(filterIndex) {
 
-        nodes = {};
-        links = [];
-        links = _.filter(root, function(link) {
-            return link.area == filterIndex;
-        });
+    nodes = {};
+    links = [];
 
-    // Compute the distinct nodes from the links.
+    links = _.filter(root, function(link) {
+        return link.area == filterIndex;
+    });
 
     links.forEach(function(link) {
             if(filterIndex != 0 && link.area == filterIndex){
@@ -265,6 +279,8 @@ function update(filterIndex) {
 
             }
     });
+console.log(links);
+console.log(nodes);
 
     buildTree();
 
