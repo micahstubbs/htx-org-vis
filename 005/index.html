@@ -142,7 +142,7 @@ function click(d1,i){
 
     target.select("circle").transition()
         .duration(750)
-        .attr("r", function(){ return (target.attr("r")==12)? 5:12;   })
+        .attr("r", function(){ return (target.attr("r")==15)? 5:15;   })
         .style("fill", "lightsteelblue");
 
     var el = target.select('text');
@@ -283,12 +283,10 @@ function update(filterIndex) {
 
     links.forEach(function(link) {
             if(link.area == filterIndex){
-                console.log(link);
                             link.source = nodes[link.source] || 
                                 (nodes[link.source] = {name: link.employee,title:link.title});
                             link.target = nodes[link.target] || 
                                 (nodes[link.target] = {name: link.manager,title:link.title});
-
             }
     });
 
