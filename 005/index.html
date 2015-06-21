@@ -138,62 +138,62 @@ function tick() {
 
 function click(d1,i){
 
-var target = d3.select(this);
-
-    target.select("text").transition()
-        .duration(750)
-        .attr("x", 22)
-        .style("fill", "steelblue")
-        .style("stroke", "lightsteelblue")
-        .style("stroke-width", ".5px")
-        .style("font-size", "20px");
+    var target = d3.select(this);
 
     target.select("circle").transition()
         .duration(750)
-        .attr("r", function(){ return (target.attr("r")==16)? 5:16;   })
+        .attr("r", function(){ return (target.attr("r")==15)? 5:15;   })
         .style("fill", "lightsteelblue");
+
+    var el = target.select('text');
+    var words = d1.title.split(' ');
+    el.text('');
+    for (var i = 0; i < words.length; i++) {
+        var tspan = el.append('tspan').text(words[i].toUpperCase());
+        if (i > 0)
+            tspan.attr('x', 12).attr('dy', '10');
+    }
+
 
     force.charge(
             function(d2,i){
                 if(d2!=d1)
-                    return -200;//calculate your charge for other nodes
+                    return -600;//calculate your charge for other nodes
                 else
-                    return -4000;//calculate your charge for the clicked node
+                    return -8000;//calculate your charge for the clicked node
             });
+
 
         force.start();
  }
 
 // action to take on mouse double click
-function dblclick() {
+function dblclick(d1,i) {
 
-    force.linkStrength(0.5).charge(-200).friction(0.6);
+    var target = d3.select(this);
 
-    force.start();
+    force.linkStrength(0.5).charge(-600).friction(0.6);
 
     d3.select(this).select("circle").transition()
         .duration(750)
         .attr("r", 6)
         .style("fill", "#ccc");
-    d3.select(this).select("text").transition()
-        .duration(750)
-        .attr("x", 12)
-        .style("stroke", "none")
-        .style("fill", "black")
-        .style("stroke", "none")
-        .style("font", "10px sans-serif");
+
+    var el = target.select('text');
+    var words = d1.name.split(' ');
+    el.text('');
+    for (var i = 0; i < words.length; i++) {
+        var tspan = el.append('tspan').text(words[i].toUpperCase());
+        if (i > 0)
+            tspan.attr('x', 12).attr('dy', '10');
+    }
+
+    force.start();
 
 };
 
 
 function buildTree(){
-
- force.nodes(d3.values(nodes))
-    .links(links)
-    .linkStrength(0.5)
-    .charge(-200).friction(0.7)
-    .on("tick", tick)
-    .start();
 
 svg.append("svg:defs").selectAll("marker")
     .data(["end"])      // Different link/path types can be defined here
@@ -208,6 +208,15 @@ svg.append("svg:defs").selectAll("marker")
     .attr("class", "marker")
   .append("svg:path")
     .attr("d", "M0,-5L10,0L0,5");
+
+
+ force.nodes(d3.values(nodes))
+    .links(links)
+    .linkStrength(0.5)
+    .charge(-600).friction(0.7)
+    .on("tick", tick)
+    .start();
+
 
 path = path.data(force.links());
 path.exit().remove();
@@ -244,6 +253,8 @@ nodeObj.on("click", click)
         .on("dblclick", dblclick)
         .call(force.drag);
 
+svg.selectAll('text').each(insertLinebreaks);
+
 }
 
 // colors from http://colorbrewer2.org/
@@ -271,33 +282,30 @@ function update(filterIndex) {
     });
 
     links.forEach(function(link) {
-            if(filterIndex != 0 && link.area == filterIndex){
+            if(link.area == filterIndex){
                             link.source = nodes[link.source] || 
-                                (nodes[link.source] = {name: link.employee});
+                                (nodes[link.source] = {name: link.employee,title:link.title});
                             link.target = nodes[link.target] || 
-                                (nodes[link.target] = {name: link.manager});
-
+                                (nodes[link.target] = {name: link.manager,title:link.title});
             }
     });
-console.log(links);
-console.log(nodes);
 
     buildTree();
 
 }
 
-function flatten(root) {
-  var nodes = [], i = 0;
+var insertLinebreaks = function (d) {
+    var el = d3.select(this);
+    var words = d.name.split(' ');
 
-  function recurse(node) {
-    if (node.children) node.children.forEach(recurse);
-    if (!node.id) node.id = ++i;
-    nodes.push(node);
-  }
+    el.text('');
 
-  recurse(root);
-  return nodes;
-}
+    for (var i = 0; i < words.length; i++) {
+        var tspan = el.append('tspan').text(words[i].toUpperCase());
+        if (i > 0)
+            tspan.attr('x', 12).attr('dy', '10');
+    }
+};
 
 </script>
 </body>
