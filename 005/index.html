@@ -34,6 +34,10 @@ text {
     position: fixed;
     font-family: sans-serif;
     padding-left:1em;
+    pointer-events: none;
+}
+.ui select{
+    pointer-events: all;
 }
 
 .vip circle{
@@ -53,6 +57,20 @@ select.form-control {
 
 <div class="ui" id="ui-container">
 	<h1 class="xlarge oswald">Houston Texas City Government Organization Chart</h1>
+
+    <div id="selectorWrap"></div>
+
+    <div class="metadata">
+        <h3 class="oswald">Specific Insights</h3>
+        <div class="g--third">
+            <p class="g--half large thin">Total Employees:</p>
+            <p class="g--half g--last xxlarge oswald" id="nodes-total"></p>
+        </div>
+        <div class="g--third">
+            <p class="g--half large thin">Managers:</p>
+            <p class="g--half g--last xxlarge oswald" id="nodes-children"></p>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -62,6 +80,7 @@ var width = 4000,
     root;
 
 var vipArr = ["ANNISE PARKER"];
+var managers = [];
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
@@ -98,7 +117,7 @@ root.forEach(function(link) {
 
 areas = _.uniq(areas);
 
-var selector = d3.select("#ui-container")
+var selector = d3.select("#selectorWrap")
     .append("select")
     .attr("id", "branch-selector")
     .attr("class", "form-control")
@@ -187,9 +206,7 @@ function dblclick(d1,i) {
         if (i > 0)
             tspan.attr('x', 12).attr('dy', '10');
     }
-
     force.start();
-
 };
 
 
@@ -287,10 +304,27 @@ function update(filterIndex) {
                                 (nodes[link.source] = {name: link.employee,title:link.title});
                             link.target = nodes[link.target] || 
                                 (nodes[link.target] = {name: link.manager,title:link.title});
+
+    managers.push(link.manager);
+
             }
+
     });
 
-    buildTree();
+    var categories = _.chain(links)
+      .countBy("manager")
+      .pairs()
+      .sortBy(1).reverse()
+      .pluck(0)
+      .value();
+
+       var nodesMeta = d3.select("#nodes-total");
+       var clustersMeta = d3.select("#nodes-children");
+
+       nodesMeta.html(links.length);
+       clustersMeta.html(categories.length);
+
+        buildTree();
 
 }
 
