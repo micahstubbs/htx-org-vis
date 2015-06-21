@@ -165,6 +165,7 @@ function click(d1,i){
         .style("fill", "lightsteelblue");
 
     var el = target.select('text');
+    console.log(d1);
     var words = d1.title.split(' ');
     el.text('');
     for (var i = 0; i < words.length; i++) {
@@ -289,7 +290,14 @@ function color(d) {
 }
 
 
+
 function update(filterIndex) {
+
+    var titles = {};
+    links.forEach(function(link){
+        // suboptimal, since names may not be unique
+        titles[link.employee] = link.title;
+    })
 
     nodes = {};
     links = [];
@@ -297,18 +305,13 @@ function update(filterIndex) {
     links = _.filter(root, function(link) {
         return link.area == filterIndex;
     });
+    console.log(links);
 
     links.forEach(function(link) {
-            if(link.area == filterIndex){
-                            link.source = nodes[link.source] || 
-                                (nodes[link.source] = {name: link.employee,title:link.title});
-                            link.target = nodes[link.target] || 
-                                (nodes[link.target] = {name: link.manager,title:link.title});
-
-    managers.push(link.manager);
-
-            }
-
+        link.source = nodes[link.source] || 
+            (nodes[link.source] = {name: link.employee,title:link.title});
+        link.target = nodes[link.target] || 
+            (nodes[link.target] = {name: link.manager,title:titles[link.manager]});
     });
 
     var categories = _.chain(links)
